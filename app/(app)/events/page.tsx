@@ -69,6 +69,12 @@ export default async function EventsPage() {
       event.status !== "completed"
   );
 
+  const history = eventList.filter(
+    (event) =>
+      event.status === "completed" ||
+      event.status === "cancelled"
+  );
+
   const completed = eventList.filter(
     (event) => event.status === "completed"
   );
@@ -142,6 +148,29 @@ export default async function EventsPage() {
               />
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-lg font-semibold">
+            Historial
+        </h2>
+
+        {history.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
+            <p className="text-zinc-400">
+                Aún no hay eventos completados o cancelados.
+            </p>
+            </div>
+        ) : (
+            <div className="mt-4 space-y-3">
+            {history.map((event) => (
+                <EventCard
+                key={event.id}
+                event={event}
+                />
+            ))}
+            </div>
         )}
       </section>
 

@@ -1,5 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 
+import {
+  getDaysRemaining,
+  getPreparationScore,
+  getPrioritySongs,
+  type PreparationSong,
+} from "@/lib/music/preparation";
+
 export default async function DashboardPage() {
   const supabase = await createClient();
 
@@ -87,6 +94,50 @@ export default async function DashboardPage() {
 
   const nextRehearsal = rehearsalsResult.data?.[0] ?? null;
   const nextEvent = eventsResult.data?.[0] ?? null;
+  let eventPreparation = null;
+
+    if (nextEvent) {
+    const { data: eventSongs } = await supabase
+        .from("event_songs")
+        .select(`
+        songs (
+            id,
+            title,
+            status
+        )
+        `)
+        .eq("event_id", nextEvent.id);
+
+    const preparationSongs: PreparationSong[] =
+        (eventSongs ?? []).flatMap((item) => {
+        const song = Array.isArray(item.songs)
+            ? item.songs[0]
+            : item.songs;
+
+        if (!song) return [];
+
+        return [
+            {
+            id: song.id,
+            title: song.title,
+            status: song.status,
+            },
+        ];
+        });
+
+    eventPreparation = {
+        songs: preparationSongs,
+        score: getPreparationScore(
+        preparationSongs
+        ),
+        prioritySongs: getPrioritySongs(
+        preparationSongs
+        ),
+        daysRemaining: getDaysRemaining(
+        nextEvent.event_date
+        ),
+    };
+    }
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -255,6 +306,107 @@ export default async function DashboardPage() {
           </p>
         )}
       </section>
+
+      {nextEvent && eventPreparation && (
+        <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p className="text-sm text-zinc-500">
+                Preparación del próximo evento
+                </p>
+
+                <h2 className="mt-1 text-xl font-semibold">
+                {nextEvent.name}
+                </h2>
+
+                <p className="mt-1 text-sm text-zinc-500">
+                Faltan {eventPreparation.daysRemaining} días
+                </p>
+            </div>
+
+            <div className="text-left sm:text-right">
+                <p className="text-4xl font-semibold">
+                {eventPreparation.score}%
+                </p>
+
+                <p className="mt-1 text-xs uppercase tracking-wider text-zinc-600">
+                Preparación
+                </p>
+            </div>
+            </div>
+
+            <div className="mt-6 h-2 overflow-hidden rounded-full bg-white/5">
+            <div
+                className="h-full rounded-full bg-white transition-all"
+                style={{
+                width: `${eventPreparation.score}%`,
+                }}
+            />
+            </div>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <InfoItem
+                label="Setlist"
+                value={`${eventPreparation.songs.length} canciones`}
+            />
+
+            <InfoItem
+                label="Listas"
+                value={eventPreparation.songs
+                .filter(
+                    (song) =>
+                    song.status === "ready" ||
+                    song.status === "mastered"
+                )
+                .length.toString()}
+            />
+
+            <InfoItem
+                label="Necesitan trabajo"
+                value={eventPreparation.prioritySongs.length.toString()}
+            />
+            </div>
+
+            <div className="mt-8 border-t border-white/10 pt-6">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-600">
+                Prioridad para el próximo ensayo
+            </p>
+
+            {eventPreparation.prioritySongs.length === 0 ? (
+                <p className="mt-3 text-sm text-zinc-400">
+                Todo el setlist está listo.
+                </p>
+            ) : (
+                <div className="mt-4 space-y-2">
+                {eventPreparation.prioritySongs
+                    .slice(0, 5)
+                    .map((song, index) => (
+                    <div
+                        key={song.id}
+                        className="flex items-center gap-3 rounded-xl border border-white/10 px-4 py-3"
+                    >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 text-xs text-zinc-500">
+                        {index + 1}
+                        </span>
+
+                        <div>
+                        <p className="text-sm font-medium text-zinc-200">
+                            {song.title}
+                        </p>
+
+                        <p className="mt-0.5 text-xs text-zinc-600">
+                            {translateSongStatus(
+                            song.status
+                            )}
+                        </p>
+                        </div>
+                    </div>
+                    ))}
+                </div>
+            )}
+            </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -330,4 +482,18 @@ function formatTime(time: string) {
   }).format(
     new Date(2026, 0, 1, Number(hours), Number(minutes))
   );
+}
+
+function translateSongStatus(
+  status: string
+) {
+  const labels: Record<string, string> = {
+    new: "Nueva",
+    learning: "Aprendiendo",
+    needs_rehearsal: "Necesita ensayo",
+    ready: "Lista",
+    mastered: "Dominada",
+  };
+
+  return labels[status] ?? status;
 }

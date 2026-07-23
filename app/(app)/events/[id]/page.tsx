@@ -2,7 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
-import { addSongToEvent } from "./actions";
+import {
+  addSongToEvent,
+  updateEvent,
+  removeSongFromEvent,
+} from "./actions";
+
+import EventDangerActions from "./event-danger-actions";
+
+import RemoveEventSongButton from "./remove-event-song-button";
 
 type Props = {
   params: Promise<{
@@ -177,6 +185,137 @@ export default async function EventDetailPage({
         />
       </section>
 
+      <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+        <h2 className="text-lg font-semibold">
+            Información del evento
+        </h2>
+
+        <form
+            action={updateEvent}
+            className="mt-6 grid gap-4 sm:grid-cols-2"
+        >
+            <input
+            type="hidden"
+            name="event_id"
+            value={event.id}
+            />
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Nombre
+            </span>
+
+            <input
+                name="name"
+                required
+                defaultValue={event.name}
+                className={inputClass}
+            />
+            </label>
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Tipo
+            </span>
+
+            <input
+                name="event_type"
+                defaultValue={event.event_type ?? ""}
+                className={inputClass}
+            />
+            </label>
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Fecha
+            </span>
+
+            <input
+                type="date"
+                name="event_date"
+                required
+                defaultValue={event.event_date}
+                className={inputClass}
+            />
+            </label>
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Hora
+            </span>
+
+            <input
+                type="time"
+                name="start_time"
+                defaultValue={event.start_time ?? ""}
+                className={inputClass}
+            />
+            </label>
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Lugar
+            </span>
+
+            <input
+                name="location"
+                defaultValue={event.location ?? ""}
+                className={inputClass}
+            />
+            </label>
+
+            <label>
+            <span className="mb-2 block text-sm text-zinc-400">
+                Estado
+            </span>
+
+            <select
+                name="status"
+                defaultValue={event.status}
+                className={inputClass}
+            >
+                <option value="planned">
+                Planeado
+                </option>
+
+                <option value="confirmed">
+                Confirmado
+                </option>
+
+                <option value="completed">
+                Completado
+                </option>
+
+                <option value="cancelled">
+                Cancelado
+                </option>
+            </select>
+            </label>
+
+            <label className="sm:col-span-2">
+            <span className="mb-2 block text-sm text-zinc-400">
+                Notas
+            </span>
+
+            <textarea
+                name="notes"
+                rows={4}
+                defaultValue={event.notes ?? ""}
+                className={`${inputClass} resize-none`}
+            />
+            </label>
+
+            <div className="sm:col-span-2">
+            <button
+                type="submit"
+                className="rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
+            >
+                Guardar cambios
+            </button>
+            </div>
+        </form>
+      </section>
+
       {event.notes && (
         <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
           <p className="text-xs uppercase tracking-wider text-zinc-600">
@@ -262,14 +401,35 @@ export default async function EventDetailPage({
                     )}
                   </div>
 
-                  <SongStatus
-                    status={song.status}
-                  />
+                  <div className="flex shrink-0 items-center gap-3">
+                    <SongStatus status={song.status} />
+
+                    {event.status !== "completed" &&
+                        event.status !== "cancelled" && (
+                            <RemoveEventSongButton
+                                eventSongId={item.id}
+                                eventId={event.id}
+                                songTitle={song.title}
+                            />
+                        )}
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
+      </section>
+
+      <section className="mt-10 border-t border-white/10 pt-8">
+        <p className="mb-4 text-xs uppercase tracking-[0.18em] text-zinc-600">
+            Acciones del evento
+        </p>
+
+        <EventDangerActions
+            eventId={event.id}
+            eventName={event.name}
+            status={event.status}
+        />
       </section>
 
       {event.status !== "completed" &&

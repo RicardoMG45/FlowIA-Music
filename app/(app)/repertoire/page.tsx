@@ -164,9 +164,12 @@ function SongRow({ song }: { song: Song }) {
   return (
     <div className="grid gap-3 border-b border-white/10 px-5 py-4 last:border-b-0 md:grid-cols-[2fr_1.5fr_1fr_1fr_1fr] md:items-center md:gap-4">
       <div>
-        <p className="font-medium text-zinc-100">
+        <Link 
+          href={`/repertoire/${song.id}`} 
+          className="font-medium text-zinc-100 transition hover:text-white hover:underline"
+        >
           {song.title}
-        </p>
+        </Link>
 
         {song.lead_vocal && (
           <p className="mt-1 text-xs text-zinc-600">

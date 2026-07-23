@@ -40,21 +40,20 @@ export default function DeleteSongButton({
         <button
           type="button"
           onClick={() => setConfirming(false)}
-          className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5"
+          className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 transition hover:bg-white/5"
         >
           Cancelar
         </button>
 
-        <form action={deleteSong}>
-          <input type="hidden" name="id" value={songId} />
-
-          <button
-            type="submit"
-            className="rounded-lg bg-red-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-red-600"
-          >
-            Sí, eliminar
-          </button>
-        </form>
+        <button
+          type="submit"
+          name="id"
+          value={songId}
+          formAction={deleteSong}
+          className="rounded-lg bg-red-500 px-3 py-2 text-xs font-medium text-white transition hover:bg-red-600"
+        >
+          Sí, eliminar
+        </button>
       </div>
     </div>
   );

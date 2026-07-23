@@ -1,17 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
-type Song = {
-  id: string;
-  title: string;
-  artist: string | null;
-  genre: string | null;
-  status: string;
-  musical_key: string | null;
-  lead_vocal: string | null;
-  duration_minutes: number | null;
-  notes: string | null;
-};
+import RepertoireList, {
+  type Song,
+} from "./repertoire-list";
 
 export default async function RepertoirePage() {
   const supabase = await createClient();
@@ -125,93 +117,23 @@ export default async function RepertoirePage() {
 
       <section className="mt-8">
         {repertoire.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
+            <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center">
             <p className="text-lg font-medium">
-              Aún no hay canciones
-            </p>
+                Aún no hay canciones
+              </p>
 
-            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
-              Agrega el repertorio de Blue Rose para comenzar a organizar
-              ensayos y preparar al futuro agente.
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-500">
+                Agrega el repertorio de Blue Rose para comenzar a organizar
+                ensayos y preparar al futuro agente.
             </p>
-          </div>
+            </div>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-white/10">
-            <div className="hidden grid-cols-[2fr_1.5fr_1fr_1fr_1fr] gap-4 border-b border-white/10 bg-white/[0.02] px-5 py-3 text-xs font-medium uppercase tracking-wider text-zinc-600 md:grid">
-              <span>Canción</span>
-              <span>Artista</span>
-              <span>Género</span>
-              <span>Tonalidad</span>
-              <span>Estado</span>
-            </div>
-
-            <div>
-              {repertoire.map((song) => (
-                <SongRow
-                  key={song.id}
-                  song={song}
-                />
-              ))}
-            </div>
-          </div>
+            <RepertoireList songs={repertoire} />
         )}
-      </section>
-    </div>
-  );
-}
-
-function SongRow({ song }: { song: Song }) {
-  return (
-    <div className="grid gap-3 border-b border-white/10 px-5 py-4 last:border-b-0 md:grid-cols-[2fr_1.5fr_1fr_1fr_1fr] md:items-center md:gap-4">
-      <div>
-        <Link 
-          href={`/repertoire/${song.id}`} 
-          className="font-medium text-zinc-100 transition hover:text-white hover:underline"
-        >
-          {song.title}
-        </Link>
-
-        {song.lead_vocal && (
-          <p className="mt-1 text-xs text-zinc-600">
-            Voz: {song.lead_vocal}
-          </p>
-        )}
-      </div>
-
-      <p className="text-sm text-zinc-400">
-        {song.artist ?? "—"}
-      </p>
-
-      <p className="text-sm text-zinc-500">
-        {song.genre ?? "—"}
-      </p>
-
-      <p className="text-sm text-zinc-500">
-        {song.musical_key ?? "—"}
-      </p>
-
-      <div>
-        <StatusBadge status={song.status} />
-      </div>
-    </div>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const labels: Record<string, string> = {
-    new: "Nueva",
-    learning: "Aprendiendo",
-    needs_rehearsal: "Necesita ensayo",
-    ready: "Lista",
-    mastered: "Dominada",
-  };
-
-  return (
-    <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-300">
-      {labels[status] ?? status}
-    </span>
-  );
-}
+        </section>
+            </div>
+        );
+        }
 
 function MetricCard({
   label,

@@ -139,3 +139,38 @@ export async function updateRehearsalSongResult(
   revalidatePath("/repertoire");
   revalidatePath("/dashboard");
 }
+
+export async function completeRehearsal(
+  formData: FormData
+) {
+  const supabase = await createClient();
+
+  const rehearsalId = formData
+    .get("rehearsal_id")
+    ?.toString();
+
+  const notes =
+    formData.get("notes")?.toString().trim() || null;
+
+  if (!rehearsalId) {
+    throw new Error("No se encontró el ensayo.");
+  }
+
+  const { error } = await supabase
+    .from("rehearsals")
+    .update({
+      status: "completed",
+      notes,
+    })
+    .eq("id", rehearsalId);
+
+  if (error) {
+    throw new Error(
+      `No se pudo finalizar el ensayo: ${error.message}`
+    );
+  }
+
+  revalidatePath(`/rehearsals/${rehearsalId}`);
+  revalidatePath("/rehearsals");
+  revalidatePath("/dashboard");
+}

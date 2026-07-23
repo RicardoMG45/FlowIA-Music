@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
 import {
   addSongToRehearsal,
   updateRehearsalSongResult,
+  completeRehearsal,
 } from "./actions";
+import { createClient } from "@/lib/supabase/server";
 
 type Props = {
   params: Promise<{
@@ -110,6 +111,22 @@ export default async function RehearsalDetailPage({
     repertoireResult.data?.filter(
       (song) => !selectedSongIds.has(song.id)
     ) ?? [];
+
+  const readyCount = rehearsalSongs.filter(
+    (item) => item.result === "ready"
+  ).length;
+
+  const needsRehearsalCount = rehearsalSongs.filter(
+    (item) => item.result === "needs_rehearsal"
+  ).length;
+
+  const notPracticedCount = rehearsalSongs.filter(
+    (item) => item.result === "not_practiced"
+  ).length;
+
+  const pendingCount = rehearsalSongs.filter(
+    (item) => !item.result
+  ).length;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -280,105 +297,192 @@ export default async function RehearsalDetailPage({
         )}
       </section>
 
-      <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
-        <h2 className="text-lg font-semibold">
-          Agregar canción
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold">
+            Resumen del ensayo
         </h2>
 
-        <p className="mt-1 text-sm text-zinc-500">
-          Selecciona una canción del repertorio.
-        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-4">
+            <InfoCard
+            label="Canciones"
+            value={rehearsalSongs.length.toString()}
+            />
 
-        {availableSongs.length === 0 ? (
-          <p className="mt-6 text-sm text-zinc-500">
-            No hay más canciones disponibles para agregar.
-          </p>
-        ) : (
-          <form
-            action={addSongToRehearsal}
-            className="mt-6 grid gap-4 sm:grid-cols-2"
-          >
+            <InfoCard
+            label="Listas"
+            value={readyCount.toString()}
+            />
+
+            <InfoCard
+            label="Necesitan ensayo"
+            value={needsRehearsalCount.toString()}
+            />
+
+            <InfoCard
+            label="Pendientes"
+            value={(pendingCount + notPracticedCount).toString()}
+            />
+        </div>
+      </section>
+      {rehearsal.status !== "completed" && (
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <h2 className="text-lg font-semibold">
+            Agregar canción
+            </h2>
+
+            <p className="mt-1 text-sm text-zinc-500">
+            Selecciona una canción del repertorio.
+            </p>
+
+            {availableSongs.length === 0 ? (
+            <p className="mt-6 text-sm text-zinc-500">
+                No hay más canciones disponibles para agregar.
+            </p>
+            ) : (
+            <form
+                action={addSongToRehearsal}
+                className="mt-6 grid gap-4 sm:grid-cols-2"
+            >
+                <input
+                type="hidden"
+                name="rehearsal_id"
+                value={rehearsal.id}
+                />
+
+                <label>
+                <span className="mb-2 block text-sm text-zinc-400">
+                    Canción
+                </span>
+
+                <select
+                    name="song_id"
+                    required
+                    className={inputClass}
+                >
+                    <option value="">
+                    Selecciona...
+                    </option>
+
+                    {availableSongs.map((song) => (
+                    <option
+                        key={song.id}
+                        value={song.id}
+                    >
+                        {song.title}
+                        {song.artist
+                        ? ` — ${song.artist}`
+                        : ""}
+                    </option>
+                    ))}
+                </select>
+                </label>
+
+                <label>
+                <span className="mb-2 block text-sm text-zinc-400">
+                    Prioridad
+                </span>
+
+                <select
+                    name="priority"
+                    defaultValue="2"
+                    className={inputClass}
+                >
+                    <option value="1">
+                    Baja
+                    </option>
+
+                    <option value="2">
+                    Media
+                    </option>
+
+                    <option value="3">
+                    Alta
+                    </option>
+                </select>
+                </label>
+
+                <label className="sm:col-span-2">
+                <span className="mb-2 block text-sm text-zinc-400">
+                    Motivo
+                </span>
+
+                <input
+                    name="reason"
+                    placeholder="Ej. Erick necesita revisar el solo"
+                    className={inputClass}
+                />
+                </label>
+
+                <div className="sm:col-span-2">
+                <button
+                    type="submit"
+                    className="rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
+                >
+                    Agregar al ensayo
+                </button>
+                </div>
+            </form>
+            )}
+        </section>
+    )}
+
+      {rehearsal.status !== "completed" ? (
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <h2 className="text-lg font-semibold">
+            Finalizar ensayo
+            </h2>
+
+            <p className="mt-1 text-sm text-zinc-500">
+            Guarda las conclusiones generales antes de cerrar el ensayo.
+            </p>
+
+            <form
+            action={completeRehearsal}
+            className="mt-6"
+            >
             <input
-              type="hidden"
-              name="rehearsal_id"
-              value={rehearsal.id}
+                type="hidden"
+                name="rehearsal_id"
+                value={rehearsal.id}
             />
 
             <label>
-              <span className="mb-2 block text-sm text-zinc-400">
-                Canción
-              </span>
+                <span className="mb-2 block text-sm text-zinc-400">
+                Notas finales
+                </span>
 
-              <select
-                name="song_id"
-                required
-                className={inputClass}
-              >
-                <option value="">
-                  Selecciona...
-                </option>
-
-                {availableSongs.map((song) => (
-                  <option
-                    key={song.id}
-                    value={song.id}
-                  >
-                    {song.title}
-                    {song.artist
-                      ? ` — ${song.artist}`
-                      : ""}
-                  </option>
-                ))}
-              </select>
+                <textarea
+                name="notes"
+                rows={5}
+                defaultValue={rehearsal.notes ?? ""}
+                placeholder="Ej. Mejoraron las transiciones. Revisar entrada de batería y armonías..."
+                className={`${inputClass} resize-none`}
+                />
             </label>
 
-            <label>
-              <span className="mb-2 block text-sm text-zinc-400">
-                Prioridad
-              </span>
-
-              <select
-                name="priority"
-                defaultValue="2"
-                className={inputClass}
-              >
-                <option value="1">
-                  Baja
-                </option>
-
-                <option value="2">
-                  Media
-                </option>
-
-                <option value="3">
-                  Alta
-                </option>
-              </select>
-            </label>
-
-            <label className="sm:col-span-2">
-              <span className="mb-2 block text-sm text-zinc-400">
-                Motivo
-              </span>
-
-              <input
-                name="reason"
-                placeholder="Ej. Erick necesita revisar el solo"
-                className={inputClass}
-              />
-            </label>
-
-            <div className="sm:col-span-2">
-              <button
+            <button
                 type="submit"
-                className="rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black hover:bg-zinc-200"
-              >
-                Agregar al ensayo
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
+                className="mt-5 rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+                Finalizar ensayo
+            </button>
+            </form>
+        </section>
+        ) : (
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/[0.02] p-6">
+            <p className="text-xs uppercase tracking-wider text-zinc-600">
+            Ensayo finalizado
+            </p>
+
+            <h2 className="mt-2 text-lg font-semibold">
+            Conclusiones
+            </h2>
+
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-zinc-400">
+            {rehearsal.notes ?? "No se registraron notas finales."}
+            </p>
+        </section>
+      )}
     </div>
   );
 }
